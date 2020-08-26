@@ -1,0 +1,31 @@
+*{
+    margin: 0px;
+}
+.container{
+    width:60%;
+    margin:auto;
+}
+.tweet__container{
+    height:auto;
+    width:100%;
+    margin-bottom:5px;
+    outline: 0.5pt;
+    outline-style: solid;
+    padding:10px;
+    border-radius: 5px;
+}
+.tweet__container:nth-of-type(odd){
+    background: #ffccff;
+}
+.retweet_container{
+    margin-left:10%;
+    margin-top: 20px;
+    margin-bottom:20px;
+    background: blue;
+}
+.quote_tweet_container{
+    margin-left:10%;
+    margin-top: 20px;
+    margin-bottom:20px;
+    background: red
+}
