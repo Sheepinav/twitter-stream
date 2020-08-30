@@ -31,36 +31,31 @@ var client = new Twitter({
 
 let socketConnection
 
-// const stream = () =>{
-//     console.log("stream called")
-//     client.stream('statuses/filter', {track: 'convention'}, (stream) => {
-//     stream.on('data', tweet => {
-//         socketConnection.emit("tweets", tweet);
-//         console.log(tweet)
-//     })
-// })};
+topic = 'convention'
 
 console.log("stream called")
-var stream = client.stream('statuses/filter', {track: 'convention'});
+let stream = client.stream('statuses/filter', {track: topic});
 
 socket.on("connection", socket => {
     console.log("socket connects")
-    //socketConnection = socket;
+
     stream.on('data', function(tweet) {
-        //console.log(event && event.text);
         socket.emit("tweets", tweet);
-        
-        //console.log(socket.emit("tweets", event.text))
       });
+
+    // on topic change, destroy the old stream, make a new one and connect to it
+    socket.on("topic", ( newTopic ) => {
+        topic = newTopic
+        stream.destroy()
+        stream = client.stream('statuses/filter', {track: topic});
+        stream.on('data', function(tweet) {
+            socket.emit("tweets", tweet);
+          });
+    })
+    
     socket.on("connection", () => console.log("Client connected"));
     socket.on("disconnect", () => console.log("Client disconnected"));
 })
-
-
-//TODO: find out how to stop stream
-// setTimeout(() => {
-//     socket.destroy();
-// },1000)
     
 stream.on('error', function(error) {
     console.log(error)

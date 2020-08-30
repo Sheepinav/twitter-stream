@@ -1,6 +1,15 @@
 $(function () {
     var socket = io();
 
+    document.getElementById("start-stream").addEventListener("click", (  ) => {
+        newTopic = document.getElementById("topic").value
+        socket.emit("topic", newTopic)
+        socket.connect()
+    })
+    document.getElementById("stop-stream").addEventListener("click", () => {
+        socket.disconnect()
+    })
+
     //takes in tweet and body/head, returns linked version
     const addLinks = (tweet, textToLink, section) => {
         let textAfterLinking = (section === 'body') ? 
@@ -26,21 +35,21 @@ $(function () {
         quotedStatus = (tweet.quoted_status.extended_tweet == null) ?
             await addLinks(tweet.quoted_status, tweet.quoted_status.text, 'body'):
             await addLinks(tweet.quoted_status, tweet.quoted_status.extended_tweet.full_text, 'body')
-        console.log(quotedStatus)
+        //console.log(quotedStatus)
 
         //TODO: handle images in tweet body and ReTweets
         userImage = `<img src=${tweet.user.profile_image_url_https} />`
 
         baseTweet = `
             <div class="tweet__container">
-                <div>
+                <div class="tweet__header">
                     ${userImage}
-                    <p>${tweetHead}</p>
-                    <p>${tweetBody}</p>
-                    <div class="quote_tweet_container">
+                    <p>${tweetHead}</p> 
+                </div>
+                <p>${tweetBody}</p>
+                    <div class="quote__tweet__container sub__container">
                         <p>${quotedStatus}
                     </div>
-                </div>
             </div>`
 
         if(typeof(baseTweet) === 'string'){
@@ -65,15 +74,15 @@ $(function () {
 
         baseTweet = `
             <div class="tweet__container">
-                <div>
+                <div class="tweet__header">
                     ${userImage}
                     <p>${tweetHead}</p>
-                    <p>Retweet:</p>
-                    <div class="retweet_container">
+                </div>
+                <p>Retweet:</p>
+                    <div class="retweet__container sub__container">
                         <p>${retweetHead}</p>
                         <p>${retweetBody}</p>
                     </div>
-                </div>
             </div>`
 
         if(typeof(baseTweet) === 'string'){
@@ -87,17 +96,17 @@ $(function () {
 
         baseTweet = `
             <div class="tweet__container">
-                <div>
+                <div class="tweet__header">
                     ${userImage}
                     <p>${tweetHead}</p>
-                    <p>${tweetBody}</p>
                 </div>
+                <p>${tweetBody}</p>
             </div>`
 
         if(typeof(baseTweet) === 'string'){
             $('#messages').prepend(baseTweet);
         }
-        console.log(tweet)
+        //console.log(tweet)
     }
 
     const sortTweet = async (tweet) => {
