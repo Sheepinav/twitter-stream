@@ -4,6 +4,7 @@ const Twitter = require('twitter');
 const io = require('socket.io');
 const bodyParser = require('body-parser');
 const port = process.env.PORT || 3000; 
+const fs = require('fs');
 
 const app = express();
 require('dotenv').config({ path: './.env' })
@@ -31,17 +32,13 @@ var client = new Twitter({
 
 let socketConnection
 
-topic = 'convention'
+topic = 'computer'
 
 console.log("stream called")
 let stream = client.stream('statuses/filter', {track: topic});
 
 socket.on("connection", socket => {
     console.log("socket connects")
-
-    stream.on('data', function(tweet) {
-        socket.emit("tweets", tweet);
-      });
 
     // on topic change, destroy the old stream, make a new one and connect to it
     socket.on("topic", ( newTopic ) => {
@@ -50,6 +47,11 @@ socket.on("connection", socket => {
         stream = client.stream('statuses/filter', {track: topic});
         stream.on('data', function(tweet) {
             socket.emit("tweets", tweet);
+            //write data to file to combat rate limiting
+            // const tweetString = JSON.stringify(tweet)
+            // fs.writeFile(sampleData.text, tweetString, (error) => {
+            //     console.log(error)
+            // })
           });
     })
     

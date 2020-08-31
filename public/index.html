@@ -3,18 +3,18 @@
   <head>
     <title>Socket.IO twitter</title>
     <link rel="stylesheet" href="style.css">
-    <!-- TODO: put css in external file -->
-    <style>
-        
-    </style>
   </head>
   <body>
-        <div class="container">
+      <h1>Stream Tweets from Twitter!</h1>
+      <br>
+      <div class="container"> 
+          <div class="controls">
             <input type="text" id="topic">
-            <button id="start-stream">Start</button>
+            <button id="start-stream" class="button__left">Start</button>
             <button id="stop-stream">Stop</button>
-            <div id="messages"></div>
-        </div>
+          </div>
+          <div id="messages"></div>
+      </div>
     <script src="/socket.io/socket.io.js"></script>
     <script
         src="https://code.jquery.com/jquery-3.5.1.min.js"
