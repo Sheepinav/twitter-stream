@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
 })
 
 server.listen(port, () => {
-    console.log(port)
+    console.log("server is live on port " + port)
 })
 
 var client = new Twitter({

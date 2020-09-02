@@ -1,4 +1,4 @@
-//TODO: Get Quote Header, Get/Display profile images on retweet/quotetweet
+//TODO: Fix error on double clicking start-stream
 //TODO: Refactor code to make it pretty
 
 $(function () {
@@ -20,7 +20,6 @@ $(function () {
         let textAfterLinking = (section === 'body') ? 
             textToLink:
             `@${textToLink}`
-        //console.log(textAfterLinking)
         let regex = new RegExp('(?<=@)\\w+','g')
         
         let matches = textAfterLinking.match(regex)
@@ -82,9 +81,14 @@ $(function () {
 
         //TODO: handle images in tweet body and ReTweets
         userImage = `<img src=${tweet.user.profile_image_url_https} class="head__image"/>`
+        quoteuserImage = `<img src=${tweet.quoted_status.user.profile_image_url_https} class="head__image"/>`
+
+        let quotetweetHead = tweet.quoted_status.user.screen_name
+        quoteHeadLinked = await addLinks(quotetweetHead, 'head')
 
         let tweetMediaObj = ''
         let tweetImages = ''
+
         //regular tweet images
         if (tweet.extended_tweet && tweet.extended_tweet.extended_entities && tweet.extended_tweet.extended_entities.media) {
             tweetMediaObj = tweet.extended_tweet.extended_entities.media
@@ -101,9 +105,11 @@ $(function () {
                     </a>`
             })
         }
+
         //quoted tweet's images
         let quotetweetMediaObj = ''
         let quotetweetImages = ''
+
         //images can be under extended_tweet.extended_entities, extended_tweet.entities, etc...
         //only extended_entities offers a media type so we will ignore the other paths for now
         if (tweet.quoted_status.extended_tweet && tweet.quoted_status.extended_tweet.extended_entities && tweet.quoted_status.extended_tweet.extended_entities.media) {
@@ -121,7 +127,6 @@ $(function () {
             })
         }
 
-
         baseTweet = `
             <div class="tweet__container fadeInDown">
                 <div class="tweet__header">
@@ -132,7 +137,8 @@ $(function () {
                 ${tweetImages}
                     <div class="quote__tweet__container sub__container">
                         <div class="tweet__header">
-                            <p>TODO: QUOTE HEADER</p>
+                            ${quoteuserImage}
+                            <p>${quoteHeadLinked}</p>
                         </div>
                         <p>${quotedStatus}</p>
                         ${quotetweetImages}
@@ -152,6 +158,7 @@ $(function () {
         let retweetHead = await addLinks(retweet.user.screen_name, 'head')
         
         userImage = `<img src=${tweet.user.profile_image_url_https} class="head__image"/>`
+        retweetUserImage = `<img src=${tweet.retweeted_status.user.profile_image_url_https} class="head__image"/>`
 
         let tweetImages = ''
         let mediaObj = ''
@@ -183,6 +190,7 @@ $(function () {
                 <p>Retweet:</p>
                     <div class="retweet__container sub__container">
                         <div class="tweet__header">
+                            ${retweetUserImage}
                             <p>${retweetHead}</p>
                         </div>
                         <p>${retweetBody}</p>
@@ -240,10 +248,10 @@ $(function () {
         let tweetHead = tweet.user.screen_name
         bodyLinked = await addLinks(tweetBody, 'body')
         headLinked = await addLinks(tweetHead, 'head')
+
         // tweets can be normal, retweets or quote tweets. Cannot have both a retweet and a quote tweet in one object
         if (tweet.retweeted_status){
             addRetweet(tweet, headLinked)
-            
         } else if (tweet.quoted_status){
             addQuoteTweet(tweet, bodyLinked, headLinked)
         } else {
