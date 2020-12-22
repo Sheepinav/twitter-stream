@@ -1,6 +1,3 @@
-//TODO: Fix error on double clicking start-stream
-//TODO: Refactor code to make it pretty
-
 $(function () {
     var socket = io();
 
@@ -13,257 +10,161 @@ $(function () {
         socket.disconnect()
     })
 
-    //takes in tweet and body/head, returns linked version
-    const addLinks = async (textToLink, section) => {
-        textToLink = await addHttpsLinks(textToLink)
-        textToLink = await addHashtagLinks(textToLink)
-        let textAfterLinking = (section === 'body') ? 
-            textToLink:
-            `@${textToLink}`
-        let regex = new RegExp('(?<=@)\\w+','g')
-        
-        let matches = textAfterLinking.match(regex)
-        if( matches == null ){
-            return textAfterLinking
-        }else{
-            matches.map((item, index) => {
-                textAfterLinking = textAfterLinking.replace(`@${item}`, `<a href="https://twitter.com/${item}">@${item}</a>`)
-            })
-            return textAfterLinking
-        }
-    }
-
-    //separate helper function for http based links in tweets due to differences in link destination
-    //Might refactor later
-    const addHttpsLinks = (textToLink) => {
-        let textAfterLinking = textToLink
-        let regex = new RegExp('https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)','g')
-        let matches = textAfterLinking.match(regex)
-        if( matches == null ){
-            return textAfterLinking
-        }else{
-            matches.map((item, index) => {
-                textAfterLinking = textAfterLinking.replace(`${item}`, `<a href="${item}">${item}</a>`)
-            })
-            return textAfterLinking
-        }
-    }
-
-    const addHashtagLinks = (textToLink) => {
-        let textAfterLinking = textToLink
-        let regex = new RegExp('(?<=#)\\w+','g')
-        let matches = textAfterLinking.match(regex)
-        if( matches == null ){
-            return textAfterLinking
-        }else{
-            matches.map((item, index) => {
-                textAfterLinking = textAfterLinking.replace(`#${item}`, `<a href="https://twitter.com/hashtag/${item}">#${item}</a>`)
-            })
-            return textAfterLinking
-        }
-    }
-
-    const addImages = (mediaObj) => {
-        console.log(typeof(mediaObj))
-        let imagesArray = []
-        mediaObj.map((item, index) => {
+    //unchanged
+    const addImgs = (mediaObj) => {
+        let imgLinks = ''
+        mediaObj.map(item => {
             (item.type === "photo") ? 
-                imagesArray.push(item.media_url):
-                console.log('no image')
+                imgLinks += `<a href="${item.media_url}">
+                        <img src="${item.media_url}" class="body__image">
+                    </a>`:''
         })
-        return imagesArray
+        return imgLinks
     }
 
-    const addQuoteTweet = async (tweet, tweetBody, tweetHead) => {
-        quotedStatus = (tweet.quoted_status.extended_tweet == null) ?
-            await addLinks(tweet.quoted_status.text, 'body'):
-            await addLinks(tweet.quoted_status.extended_tweet.full_text, 'body')
-
-        //TODO: handle images in tweet body and ReTweets
-        userImage = `<img src=${tweet.user.profile_image_url_https} class="head__image"/>`
-        quoteuserImage = `<img src=${tweet.quoted_status.user.profile_image_url_https} class="head__image"/>`
-
-        let quotetweetHead = tweet.quoted_status.user.screen_name
-        quoteHeadLinked = await addLinks(quotetweetHead, 'head')
-
-        let tweetMediaObj = ''
-        let tweetImages = ''
-
-        //regular tweet images
-        if (tweet.extended_tweet && tweet.extended_tweet.extended_entities && tweet.extended_tweet.extended_entities.media) {
-            tweetMediaObj = tweet.extended_tweet.extended_entities.media
-        } else if(tweet.extended_entities && tweet.extended_entities.media) {
-            tweetMediaObj = tweet.extended_entities.media
-        }
-        
-        if(tweetMediaObj != ''){
-            imagesArray = addImages(tweetMediaObj)
-            imagesArray.map((item) => {
-                tweetImages += 
-                    `<a href="${item}">
-                        <img src="${item}" class="body__image">
-                    </a>`
-            })
-        }
-
-        //quoted tweet's images
-        let quotetweetMediaObj = ''
-        let quotetweetImages = ''
-
-        //images can be under extended_tweet.extended_entities, extended_tweet.entities, etc...
-        //only extended_entities offers a media type so we will ignore the other paths for now
-        if (tweet.quoted_status.extended_tweet && tweet.quoted_status.extended_tweet.extended_entities && tweet.quoted_status.extended_tweet.extended_entities.media) {
-            quotetweetMediaObj = tweet.quoted_status.extended_tweet.extended_entities.media
-        } else if(tweet.quoted_status.extended_entities && tweet.quoted_status.extended_entities.media) {
-            quotetweetMediaObj = tweet.quoted_status.extended_entities.media
-        }
-        if(quotetweetMediaObj != ''){
-            quoteImagesArray = addImages(quotetweetMediaObj)
-            quoteImagesArray.map((item) => {
-                quotetweetImages += 
-                    `<a href="${item}">
-                        <img src="${item}" class="body__image">
-                    </a>`
-            })
-        }
-
-        baseTweet = `
-            <div class="tweet__container fadeInDown">
-                <div class="tweet__header">
-                    ${userImage}
-                    <p>${tweetHead}</p> 
-                </div>
-                <p>${tweetBody}</p>
-                ${tweetImages}
-                    <div class="quote__tweet__container sub__container">
-                        <div class="tweet__header">
-                            ${quoteuserImage}
-                            <p>${quoteHeadLinked}</p>
-                        </div>
-                        <p>${quotedStatus}</p>
-                        ${quotetweetImages}
-                    </div>
-            </div>`
-
-        if(typeof(baseTweet) === 'string'){
-            $('#messages').prepend(baseTweet);
-        }
+    const replaceText = (textToReplace, regex) => {
+        let replacedText = textToReplace
+        //replace text, works with links for now, can abstract later if needed
+        Object.keys(regex).forEach(key => {
+            let matches = textToReplace.match(regex[key].regex)
+            if(matches !== null){
+                matches.map(item => {
+                    replacedText = textToReplace.replace(regex[key].text[0] + item + '', regex[key].text[1] + item + regex[key].text[2] + item + regex[key].text[3])
+                    //console.log(textToReplace)
+                })
+            }
+        })
+        return replacedText
     }
 
-    const addRetweet = async (tweet, tweetHead) => {
-        let retweet = tweet.retweeted_status
-        let retweetBody = (retweet.extended_tweet == null ) ?
-            await addLinks(retweet.text, 'body'):
-            await addLinks(retweet.extended_tweet.full_text, 'body')
-        let retweetHead = await addLinks(retweet.user.screen_name, 'head')
-        
-        userImage = `<img src=${tweet.user.profile_image_url_https} class="head__image"/>`
-        retweetUserImage = `<img src=${tweet.retweeted_status.user.profile_image_url_https} class="head__image"/>`
+    const addLinks = textToLink => {
+        //regexObj contains details for all links, twitter @'s, external links, and hashtags
+        regexObj = {
+            userRefRegex: {
+                regex: new RegExp('(?<=@)\\w+','g'), 
+                text: ['@', '<a href="https://twitter.com/','">@','</a>']
+            },
+            httpRegex: {
+                regex: new RegExp('https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)','g'),
+                text:['', '<a href="', '">', '</a>']
+            },
+            hashtagRegex: {
+                regex: new RegExp('(?<=#)\\w+','g'),
+                text: ['#', '<a href="https://twitter.com/hashtag/', '">#', '</a>']
+            }
+        }
+        return textToLink = replaceText(textToLink, regexObj)
+    }
 
-        let tweetImages = ''
+    const handleBaseTweet = (baseTweet, tweetData) => {
+        //User profile image
+        baseTweet.userImg = `<img src=${tweetData.user.profile_image_url_https} class="head__image"/>`
+        //Split tweet into head and body and add links / images
+        baseTweet.body = (tweetData.extended_tweet == null) ? addLinks(tweetData.text): addLinks(tweetData.extended_tweet.full_text)
+        baseTweet.head = addLinks(`@${tweetData.user.screen_name}`)
         let mediaObj = ''
-
-        //TODO: mediaObj = [] see if array == null in addimage function
-        if(tweet.retweeted_status.extended_tweet && tweet.retweeted_status.extended_tweet.extended_entities && tweet.retweeted_status.extended_tweet.extended_entities.media){
-            mediaObj = tweet.retweeted_status.extended_tweet.extended_entities.media
-        } else if(tweet.retweeted_status.extended_tweet && tweet.retweeted_status.extended_tweet.entities && tweet.retweeted_status.extended_tweet.entities.media){
-            mediaObj = tweet.retweeted_status.extended_tweet.entities.media
-        } else if(tweet.retweeted_status.extended_entities && tweet.retweeted_status.extended_entities.media){
-            mediaObj = tweet.retweeted_status.extended_entities.media
+        if (tweetData.extended_tweet && tweetData.extended_tweet.extended_entities && tweetData.extended_tweet.extended_entities.media) {
+            mediaObj = tweetData.extended_tweet.extended_entities.media
+            baseTweet.imgs = addImgs(mediaObj)
+        } else if(tweetData.extended_entities && tweetData.extended_entities.media) {
+            mediaObj = tweetData.extended_entities.media
+            baseTweet.imgs = addImgs(mediaObj)
         }
-        if(mediaObj != ''){
-            imagesArray = addImages(mediaObj)
-            imagesArray.map((item) => {
-                tweetImages += 
-                    `<a href="${item}">
-                        <img src="${item}" class="body__image">
-                    </a>`
-            })
+        return baseTweet
+    }
+
+    const handleRetweet = (retweet, retweetData) => {
+        //console.log(retweetData)
+        //Retweeted user profile image
+        retweet.userImg = `<img src=${retweetData.user.profile_image_url_https} class="head__image"/>`
+        retweet.body = (retweetData.extended_tweet == null ) ? addLinks(retweetData.text): addLinks(retweetData.extended_tweet.full_text)
+        retweet.head = addLinks(`@${retweetData.user.screen_name}`)
+        let mediaObj = ''
+        //multiple pathways for media, TODO: see if this can be shortened
+        if(retweetData.extended_tweet && retweetData.extended_tweet.extended_entities && retweetData.extended_tweet.extended_entities.media){
+            mediaObj = retweetData.extended_tweet.extended_entities.media
+            retweet.imgs = addImgs(mediaObj)
+        } else if(retweetData.extended_tweet && retweetData.extended_tweet.entities && retweetData.extended_tweet.entities.media){
+            mediaObj = retweetData.extended_tweet.entities.media
+            retweet.imgs = addImgs(mediaObj)
+        } else if(retweetData.extended_entities && retweetData.extended_entities.media){
+            mediaObj = retweetData.extended_entities.media
+            retweet.imgs = addImgs(mediaObj)
+        }
+        if (retweet.quoted_status) console.log('quoted status of retweet exists')
+        return retweet
+    }
+
+    const handleQuoteTweet = (quoteTweet, quoteTweetData) => {
+        quoteTweet.userImg = `<img src=${quoteTweetData.user.profile_image_url_https} class="head__image"/>`
+        quoteTweet.body = (quoteTweetData.extended_tweet == null ) ? addLinks(quoteTweetData.text): addLinks(quoteTweetData.extended_tweet.full_text)
+        quoteTweet.head = addLinks(`@${quoteTweetData.user.screen_name}`)
+        //paths for media
+        if (quoteTweetData.extended_tweet && quoteTweetData.extended_tweet.extended_entities && quoteTweetData.extended_tweet.extended_entities.media) {
+            quotetweetMediaObj = quoteTweetData.extended_tweet.extended_entities.media
+        } else if(quoteTweetData.extended_entities && quoteTweetData.extended_entities.media) {
+            quotetweetMediaObj = quoteTweetData.extended_entities.media
+        }
+        return quoteTweet
+    }
+
+    const addTweet = async (tweetData) => {
+        let Tweet = {
+            //images are stored as image html after they are found
+            baseTweet: {head:'', body:'', userImg: '', imgs:''},
+            retweet: {head: '', body: '', userImg: '', imgs:''},
+            quoteTweet: {head: '', body: '', userImg: '', imgs:''}
         }
 
-        baseTweet = `
+        // Handle Base tweet links and images
+        Tweet.baseTweet = await handleBaseTweet(Tweet.baseTweet, tweetData)
+        if (tweetData.retweeted_status){
+            Tweet.retweet = await handleRetweet(Tweet.retweet, tweetData.retweeted_status)
+            Tweet.baseTweet.body = ''
+            Tweet.baseTweet.imgs = ''
+        } else if (tweetData.quoted_status){
+            Tweet.quoteTweet = await handleQuoteTweet(Tweet.quoteTweet, tweetData.quoted_status)
+        }
+
+        let tweetContent = `
             <div class="tweet__container fadeInDown">
                 <div class="tweet__header">
-                    ${userImage}
-                    <p>${tweetHead}</p>
+                    ${Tweet.baseTweet.userImg}
+                    <p>${Tweet.baseTweet.head}</p>
                 </div>
-                <p>Retweet:</p>
+                <p>${Tweet.baseTweet.body}</p>
+                ${Tweet.baseTweet.imgs}
+                
+                ${ ((Tweet.retweet.head !== '') ? `<p>Retweet:</p>
                     <div class="retweet__container sub__container">
                         <div class="tweet__header">
-                            ${retweetUserImage}
-                            <p>${retweetHead}</p>
+                            ${Tweet.retweet.userImg}
+                            <p>${Tweet.retweet.head}</p>
                         </div>
-                        <p>${retweetBody}</p>
-                        ${tweetImages}
-                    </div>
+                        <p>${Tweet.retweet.body}</p>
+                        ${Tweet.retweet.imgs}
+                    </div>`: '')}
+                
+                ${ ((Tweet.quoteTweet.head !== '') ? `
+                    <div class="quote__tweet__container sub__container">
+                        <div class="tweet__header">
+                            ${Tweet.quoteTweet.userImg}
+                            <p>${Tweet.quoteTweet.head}</p>
+                        </div>
+                        <p>${Tweet.quoteTweet.body}</p>
+                        ${Tweet.quoteTweet.imgs}
+                    </div>`: '')}
             </div>`
 
-        if(typeof(baseTweet) === 'string'){
-            $('#messages').prepend(baseTweet);
+        if(typeof(tweetContent) === 'string'){
+            $('#messages').prepend(tweetContent);
         }
-    }
-    
-    const addTweet = async (tweet, tweetBody, tweetHead) => {
-        
-        userImage = `<img src=${tweet.user.profile_image_url_https} class="head__image"/>`
-        let tweetImages = ''
-        let mediaObj = ''
-        if (tweet.extended_tweet && tweet.extended_tweet.extended_entities && tweet.extended_tweet.extended_entities.media) {
-            mediaObj = tweet.extended_tweet.extended_entities.media
-        } else if(tweet.extended_entities && tweet.extended_entities.media) {
-            mediaObj = tweet.extended_entities.media
-        }
-        
-        if(mediaObj != ''){
-            imagesArray = addImages(mediaObj)
-            imagesArray.map((item) => {
-                tweetImages += 
-                    `<a href="${item}">
-                        <img src="${item}" class="body__image">
-                    </a>`
-            })
-        }
-        
-        baseTweet = `
-            <div class="tweet__container fadeInDown">
-                <div class="tweet__header">
-                    ${userImage}
-                    <p>${tweetHead}</p>
-                </div>
-                <p>${tweetBody}</p>
-                ${tweetImages}
-            </div>`
-
-        if(typeof(baseTweet) === 'string'){
-            $('#messages').prepend(baseTweet);
-        }
-    }
-
-    //sort tweets by type
-    const sortTweet = async (tweet) => {
-        // basic prep of main text
-        let tweetBody = (tweet.extended_tweet == null) ? 
-            tweet.text: 
-            tweet.extended_tweet.full_text
-        let tweetHead = tweet.user.screen_name
-        bodyLinked = await addLinks(tweetBody, 'body')
-        headLinked = await addLinks(tweetHead, 'head')
-
-        // tweets can be normal, retweets or quote tweets. Cannot have both a retweet and a quote tweet in one object
-        if (tweet.retweeted_status){
-            addRetweet(tweet, headLinked)
-        } else if (tweet.quoted_status){
-            addQuoteTweet(tweet, bodyLinked, headLinked)
-        } else {
-            addTweet(tweet, bodyLinked, headLinked)
-        }
-        console.log(tweet)
     }
 
     socket.on('tweets', function(tweet){
         let image = new Image()
         image.onload = setTimeout(() => {
-            sortTweet(tweet)
+            addTweet(tweet)
         }, 10, tweet)
         image.src = tweet.user.profile_image_url_https
     });
