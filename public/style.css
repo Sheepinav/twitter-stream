@@ -41,6 +41,10 @@ button{
 button:hover{
     background-color: #017374;
 }
+button:disabled{
+    background-color: #017374;
+    cursor: default;
+}
 .button__left{
     margin-right: 10px;
 }
@@ -50,11 +54,11 @@ button:hover{
 .body__image{
     margin-top:15px;
     max-width:200px;
-    max-height:300px;
+    max-height:200px;
     border-radius:10px;
 }
 .container{
-    width:40%;
+    width:50%;
     margin:auto;
 }
 .controls{
@@ -65,14 +69,11 @@ button:hover{
 .tweet__container{
     height:auto;
     background: #212121;
-    width:100%;
+    width:calc(100% - 30px);
     margin-bottom:10px;
     padding:20px;
     border-radius: 10px;
 }
-/* .tweet__container:nth-of-type(odd){
-    background: #242424;
-} */
 
 .sub__container{
     margin-left:10%;
@@ -118,4 +119,19 @@ button:hover{
             animation-fill-mode: both;
  }
 
-
+ @media only screen and (max-width: 600px) {
+    .container{
+        width:70%;
+    }
+    .sub__container{
+        margin-left:5%;
+    }
+    h1{
+        font-size:36px;
+        margin-left:20px;
+        margin-right:20px;
+    }
+    input{
+        font-size:14px;
+    }
+  }
